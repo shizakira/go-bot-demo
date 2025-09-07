@@ -40,7 +40,7 @@ func (h *BotHandler) onTextInput(ctx context.Context, b *bot.Bot, update *models
 }
 
 func (h *BotHandler) Init(b *bot.Bot) {
-	b.RegisterHandler(bot.HandlerTypeMessageText, "start", bot.MatchTypeCommand, h.onStart)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "start", bot.MatchTypeCommandStartOnly, h.onStart)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "task_create", bot.MatchTypeCommand, h.onTaskCreate)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "*", bot.MatchTypeCommand, h.onTextInput)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains, h.onTextInput)
 }
