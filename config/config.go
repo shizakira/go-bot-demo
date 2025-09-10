@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/joho/godotenv"
+	"github.com/shizakira/daily-tg-bot/pkg/database"
 	"log"
 	"os"
 )
@@ -11,6 +12,7 @@ type TelegramBotConfig struct {
 }
 type Config struct {
 	TgBot TelegramBotConfig
+	Redis memory.RedisConfig
 }
 
 func Load() *Config {
@@ -19,9 +21,11 @@ func Load() *Config {
 		log.Fatal("Error loading .env file")
 	}
 
-	tgConf := TelegramBotConfig{Token: os.Getenv("TELEGRAM_BOT_TOKEN")}
-
 	return &Config{
-		TgBot: tgConf,
+		TgBot: TelegramBotConfig{Token: os.Getenv("TELEGRAM_BOT_TOKEN")},
+		Redis: memory.RedisConfig{
+			Addr:     os.Getenv("REDIS_ADDR"),
+			Password: os.Getenv("REDIS_PASSWORD"),
+		},
 	}
 }
