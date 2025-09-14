@@ -21,6 +21,7 @@ func NewTaskService(repo Repository) *TaskService {
 
 func (s *TaskService) CreateTask(ctx context.Context, input dto.CreateTaskInput) error {
 	task := domain.Task{
+		UserID:       input.UserID,
 		Title:        input.Title,
 		Description:  input.Description,
 		DeadlineDate: input.DeadlineDate,

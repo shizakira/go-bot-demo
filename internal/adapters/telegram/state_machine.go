@@ -11,17 +11,17 @@ import (
 	"time"
 )
 
-type Step string
+type step string
 
 const (
-	TitleStep    Step = "title"
-	DescStep     Step = "description"
-	DateTimeStep Step = "datetime"
+	titleStep    step = "title"
+	descStep     step = "description"
+	dateTimeStep step = "datetime"
 )
 
 type TaskState struct {
 	UserID   int64               `json:"user_id"`
-	NextStep Step                `json:"next_step"`
+	NextStep step                `json:"next_step"`
 	Data     dto.CreateTaskInput `json:"data"`
 }
 
@@ -40,17 +40,14 @@ func NewBotTaskStateMachine(store StateStore, service *usecase.TaskService) *Bot
 	return &BotTaskStateMachine{store: store, service: service}
 }
 
-func (st *BotTaskStateMachine) ProcessingCreateTask(
-	ctx context.Context,
-	update *models.Update,
-) (string, error) {
+func (st *BotTaskStateMachine) ProcessingCreateTask(ctx context.Context, update *models.Update) (string, error) {
 	sChatID := strconv.FormatInt(update.Message.Chat.ID, 10)
 	msgText := update.Message.Text
 	log.Println(update.Message.Text)
-	if update.Message.Text == "/"+TaskCreateCommand {
+	if update.Message.Text == "/"+taskCreateCommand {
 		state := TaskState{
 			UserID:   update.Message.From.ID,
-			NextStep: TitleStep,
+			NextStep: titleStep,
 			Data:     dto.CreateTaskInput{},
 		}
 		err := st.store.Set(ctx, sChatID, &state)
@@ -65,23 +62,23 @@ func (st *BotTaskStateMachine) ProcessingCreateTask(
 	}
 
 	switch state.NextStep {
-	case TitleStep:
+	case titleStep:
 		state.Data.Title = msgText
-		state.NextStep = DescStep
+		state.NextStep = descStep
 		err = st.store.Set(ctx, sChatID, state)
 		if err != nil {
 			return "", err
 		}
 		return "Enter the task description", nil
-	case DescStep:
+	case descStep:
 		state.Data.Description = msgText
-		state.NextStep = DateTimeStep
+		state.NextStep = dateTimeStep
 		err = st.store.Set(ctx, sChatID, state)
 		if err != nil {
 			return "", err
 		}
 		return "Enter the task deadline date in format 2025-09-01 00:00", nil
-	case DateTimeStep:
+	case dateTimeStep:
 		parsedDate, err := time.Parse("2006-01-02 15:04", msgText)
 		if err != nil {
 			return "", err

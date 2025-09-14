@@ -16,12 +16,12 @@ func NewTaskRepository(pool *database.PostgresPool) *TaskRepository {
 
 func (tr *TaskRepository) Add(ctx context.Context, t domain.Task) error {
 	stmt, err := tr.pool.PrepareContext(ctx,
-		"insert into tasks (title, description, deadline) values ($1, $2, $3)",
+		"insert into tasks (user_id, title, description, deadline) values ($1, $2, $3, $4)",
 	)
 	if err != nil {
 		return err
 	}
-	_, err = stmt.ExecContext(ctx, t.Title, t.Description, t.DeadlineDate)
+	_, err = stmt.ExecContext(ctx, t.UserID, t.Title, t.Description, t.DeadlineDate)
 	return err
 }
 
@@ -36,7 +36,7 @@ func (tr *TaskRepository) GetAll(ctx context.Context) ([]*domain.Task, error) {
 
 	for rows.Next() {
 		newTask := new(domain.Task)
-		if err = rows.Scan(&newTask.ID, &newTask.Title, &newTask.Description, &newTask.DeadlineDate); err != nil {
+		if err = rows.Scan(&newTask.ID, &newTask.UserID, &newTask.Title, &newTask.Description, &newTask.DeadlineDate); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, newTask)

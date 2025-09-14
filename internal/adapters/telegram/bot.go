@@ -5,12 +5,12 @@ import (
 	"github.com/shizakira/daily-tg-bot/internal/usecase"
 )
 
-type BotCommand = string
+type botCommand = string
 
 const (
-	StartCommand      BotCommand = "start"
-	TaskCreateCommand BotCommand = "task_create"
-	TaskAllCommand    BotCommand = "task_all"
+	startCommand      botCommand = "start"
+	taskCreateCommand botCommand = "task_create"
+	taskAllCommand    botCommand = "task_all"
 )
 
 type Bot struct {

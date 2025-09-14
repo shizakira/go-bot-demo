@@ -9,9 +9,9 @@ import (
 )
 
 func (tb *Bot) InitHandlers() {
-	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, StartCommand, bot.MatchTypeCommandStartOnly, tb.onStart)
-	tb.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, TaskCreateCommand, bot.MatchTypeCommand, tb.onTaskCreate)
-	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, TaskAllCommand, bot.MatchTypeCommand, tb.onGetTasks)
+	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, startCommand, bot.MatchTypeCommandStartOnly, tb.onStart)
+	tb.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, taskCreateCommand, bot.MatchTypeCommand, tb.onTaskCreate)
+	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, taskAllCommand, bot.MatchTypeCommand, tb.onGetTasks)
 	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains, tb.onTaskCreate)
 }
 
@@ -34,8 +34,8 @@ func (tb *Bot) onGetTasks(ctx context.Context, b *bot.Bot, update *models.Update
 	}
 	for _, task := range tasks {
 		msg := fmt.Sprintf(
-			"Id: %d\nTitle: %s\nDescription: %s\nDeadline %s\n\n",
-			task.ID, task.Title, task.Description, task.DeadlineDate.Format("2006-01-02 15:04:05"),
+			"ID: %d\nTitle: %s\nDescription: %s\nDeadline %s\n\n",
+			task.ID, task.Title, task.Description, task.DeadlineDate.Format("2006-01-02 15:04"),
 		)
 		_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
