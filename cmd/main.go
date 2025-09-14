@@ -18,12 +18,6 @@ func RunApp(c *config.Config) {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	//opts := []bot.Option{}
-	b, err := bot.New(c.TgBot.Token)
-	if err != nil {
-		panic(err)
-	}
-
 	// database
 	redisClient, err := database.NewRedisClient(ctx, c.Redis)
 	if err != nil {
@@ -42,14 +36,23 @@ func RunApp(c *config.Config) {
 	}(postgresPool)
 
 	// adapters
-	redisStore := redis.NewTaskStateStore[telegram.TaskState](redisClient)
+	session := redis.NewTelegramSession(redisClient)
 	taskRepo := postgres.NewTaskRepository(postgresPool)
 
 	// services
 	taskService := usecase.NewTaskService(taskRepo)
 
 	// telegram
-	stmtM := telegram.NewBotTaskStateMachine(redisStore, taskService)
+	stmtM := telegram.NewBotTaskStateMachine(session, taskService)
+
+	// middleware
+	tm := telegram.NewMiddleware(session)
+
+	opts := []bot.Option{bot.WithMiddlewares(tm.InitSession)}
+	b, err := bot.New(c.TgBot.Token, opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// handlers
 	telegram.NewBot(b, stmtM, taskService).InitHandlers()

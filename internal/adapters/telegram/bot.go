@@ -22,3 +22,10 @@ type Bot struct {
 func NewBot(bot *bot.Bot, stateMachine *BotTaskStateMachine, service *usecase.TaskService) *Bot {
 	return &Bot{bot: bot, stateMachine: stateMachine, service: service}
 }
+
+func (tb *Bot) InitHandlers() {
+	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, startCommand, bot.MatchTypeCommandStartOnly, tb.onStart)
+	tb.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, taskCreateCommand, bot.MatchTypeCommand, tb.onTaskCreate)
+	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, taskAllCommand, bot.MatchTypeCommand, tb.onGetTasks)
+	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains, tb.onTaskCreate)
+}

@@ -2,11 +2,11 @@ package telegram
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/go-telegram/bot/models"
 	"github.com/shizakira/daily-tg-bot/internal/dto"
 	"github.com/shizakira/daily-tg-bot/internal/usecase"
-	"log"
 	"strconv"
 	"time"
 )
@@ -25,38 +25,36 @@ type TaskState struct {
 	Data     dto.CreateTaskInput `json:"data"`
 }
 
-type StateStore interface {
-	Set(ctx context.Context, key string, value *TaskState) error
-	Get(ctx context.Context, key string) (*TaskState, error)
-	Del(ctx context.Context, key string)
-}
-
 type BotTaskStateMachine struct {
-	store   StateStore
+	session Session
 	service *usecase.TaskService
 }
 
-func NewBotTaskStateMachine(store StateStore, service *usecase.TaskService) *BotTaskStateMachine {
-	return &BotTaskStateMachine{store: store, service: service}
+func NewBotTaskStateMachine(session Session, service *usecase.TaskService) *BotTaskStateMachine {
+	return &BotTaskStateMachine{session: session, service: service}
 }
 
 func (st *BotTaskStateMachine) ProcessingCreateTask(ctx context.Context, update *models.Update) (string, error) {
 	sChatID := strconv.FormatInt(update.Message.Chat.ID, 10)
 	msgText := update.Message.Text
-	log.Println(update.Message.Text)
 	if update.Message.Text == "/"+taskCreateCommand {
 		state := TaskState{
 			UserID:   update.Message.From.ID,
 			NextStep: titleStep,
 			Data:     dto.CreateTaskInput{},
 		}
-		err := st.store.Set(ctx, sChatID, &state)
+		err := st.session.Set(ctx, sChatID, "task_creating_state", &state)
 		if err != nil {
 			return "", err
 		}
 		return "Enter the task title", nil
 	}
-	state, err := st.store.Get(ctx, sChatID)
+	stateRaw, err := st.session.Get(ctx, sChatID, "task_creating_state")
+	if err != nil {
+		return "", err
+	}
+	state := new(TaskState)
+	err = json.Unmarshal(stateRaw, state)
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +63,7 @@ func (st *BotTaskStateMachine) ProcessingCreateTask(ctx context.Context, update 
 	case titleStep:
 		state.Data.Title = msgText
 		state.NextStep = descStep
-		err = st.store.Set(ctx, sChatID, state)
+		err = st.session.Set(ctx, sChatID, "task_creating_state", state)
 		if err != nil {
 			return "", err
 		}
@@ -73,7 +71,7 @@ func (st *BotTaskStateMachine) ProcessingCreateTask(ctx context.Context, update 
 	case descStep:
 		state.Data.Description = msgText
 		state.NextStep = dateTimeStep
-		err = st.store.Set(ctx, sChatID, state)
+		err = st.session.Set(ctx, sChatID, "task_creating_state", state)
 		if err != nil {
 			return "", err
 		}
@@ -88,7 +86,7 @@ func (st *BotTaskStateMachine) ProcessingCreateTask(ctx context.Context, update 
 		if err != nil {
 			return "", err
 		}
-		st.store.Del(ctx, sChatID)
+		st.session.Del(ctx, sChatID, "task_creating_state")
 		return "Task was created", nil
 	default:
 		return "", errors.New("not create task flow input")

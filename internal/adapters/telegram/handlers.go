@@ -8,13 +8,6 @@ import (
 	"log"
 )
 
-func (tb *Bot) InitHandlers() {
-	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, startCommand, bot.MatchTypeCommandStartOnly, tb.onStart)
-	tb.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, taskCreateCommand, bot.MatchTypeCommand, tb.onTaskCreate)
-	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, taskAllCommand, bot.MatchTypeCommand, tb.onGetTasks)
-	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains, tb.onTaskCreate)
-}
-
 func (tb *Bot) onStart(ctx context.Context, b *bot.Bot, update *models.Update) {
 	log.Printf("Message from %s with id %d", update.Message.From.Username, update.Message.From.ID)
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
