@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -10,6 +11,7 @@ import (
 
 func (tb *Bot) onStart(ctx context.Context, b *bot.Bot, update *models.Update) {
 	log.Printf("Message from %s with id %d", update.Message.From.Username, update.Message.From.ID)
+
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   "Tap on /task-create to create new task",
@@ -20,7 +22,12 @@ func (tb *Bot) onStart(ctx context.Context, b *bot.Bot, update *models.Update) {
 }
 
 func (tb *Bot) onGetTasks(ctx context.Context, b *bot.Bot, update *models.Update) {
-	tasks, err := tb.service.GetAllTasks(ctx)
+	userId, ok := ctx.Value(UserIdIdempotencyKey("userId")).(int64)
+	if !ok {
+		log.Println("Error on sending message", errors.New("something wrong with ctx user id"))
+		return
+	}
+	tasks, err := tb.taskService.GetAllTasksByUserID(ctx, userId)
 	if err != nil {
 		log.Println("Error on sending message", err)
 		return

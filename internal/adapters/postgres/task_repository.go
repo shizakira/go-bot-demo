@@ -25,8 +25,8 @@ func (tr *TaskRepository) Add(ctx context.Context, t domain.Task) error {
 	return err
 }
 
-func (tr *TaskRepository) GetAll(ctx context.Context) ([]*domain.Task, error) {
-	rows, err := tr.pool.QueryContext(ctx, "select * from tasks")
+func (tr *TaskRepository) GetAllByUserID(ctx context.Context, userId int64) ([]*domain.Task, error) {
+	rows, err := tr.pool.QueryContext(ctx, "select * from tasks where user_id = $1", userId)
 	if err != nil {
 		return nil, err
 	}

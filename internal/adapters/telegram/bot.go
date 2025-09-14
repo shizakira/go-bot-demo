@@ -16,11 +16,12 @@ const (
 type Bot struct {
 	bot          *bot.Bot
 	stateMachine *BotTaskStateMachine
-	service      *usecase.TaskService
+	taskService  *usecase.TaskService
+	tgService    *usecase.TelegramUserService
 }
 
 func NewBot(bot *bot.Bot, stateMachine *BotTaskStateMachine, service *usecase.TaskService) *Bot {
-	return &Bot{bot: bot, stateMachine: stateMachine, service: service}
+	return &Bot{bot: bot, stateMachine: stateMachine, taskService: service}
 }
 
 func (tb *Bot) InitHandlers() {

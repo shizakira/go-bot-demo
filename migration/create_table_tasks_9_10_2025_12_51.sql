@@ -5,10 +5,11 @@ create table if not exists users
 
 create table if not exists telegram_users
 (
-    id       serial primary key,
-    user_id  bigint,
-    chat_id  bigint,
-    username varchar(255),
+    id          serial primary key,
+    user_id     bigint,
+    telegram_id bigint,
+    chat_id     bigint,
+    username    varchar(255),
     foreign key (user_id) references users (id)
 );
 

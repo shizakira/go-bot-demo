@@ -6,16 +6,16 @@ import (
 	"github.com/shizakira/daily-tg-bot/internal/dto"
 )
 
-type Repository interface {
+type TaskRepository interface {
 	Add(ctx context.Context, t domain.Task) error
-	GetAll(ctx context.Context) ([]*domain.Task, error)
+	GetAllByUserID(ctx context.Context, userUd int64) ([]*domain.Task, error)
 }
 
 type TaskService struct {
-	repo Repository
+	repo TaskRepository
 }
 
-func NewTaskService(repo Repository) *TaskService {
+func NewTaskService(repo TaskRepository) *TaskService {
 	return &TaskService{repo: repo}
 }
 
@@ -29,6 +29,6 @@ func (s *TaskService) CreateTask(ctx context.Context, input dto.CreateTaskInput)
 	return s.repo.Add(ctx, task)
 }
 
-func (s *TaskService) GetAllTasks(ctx context.Context) ([]*domain.Task, error) {
-	return s.repo.GetAll(ctx)
+func (s *TaskService) GetAllTasksByUserID(ctx context.Context, userId int64) ([]*domain.Task, error) {
+	return s.repo.GetAllByUserID(ctx, userId)
 }

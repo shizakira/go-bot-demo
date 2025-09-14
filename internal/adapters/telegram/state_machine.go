@@ -20,7 +20,6 @@ const (
 )
 
 type TaskState struct {
-	UserID   int64               `json:"user_id"`
 	NextStep step                `json:"next_step"`
 	Data     dto.CreateTaskInput `json:"data"`
 }
@@ -37,11 +36,15 @@ func NewBotTaskStateMachine(session Session, service *usecase.TaskService) *BotT
 func (st *BotTaskStateMachine) ProcessingCreateTask(ctx context.Context, update *models.Update) (string, error) {
 	sChatID := strconv.FormatInt(update.Message.Chat.ID, 10)
 	msgText := update.Message.Text
+	userId, ok := ctx.Value(UserIdIdempotencyKey("userId")).(int64)
+	if !ok {
+		return "", errors.New("something wrong with ctx user id")
+	}
+
 	if update.Message.Text == "/"+taskCreateCommand {
 		state := TaskState{
-			UserID:   update.Message.From.ID,
 			NextStep: titleStep,
-			Data:     dto.CreateTaskInput{},
+			Data:     dto.CreateTaskInput{UserID: userId},
 		}
 		err := st.session.Set(ctx, sChatID, "task_creating_state", &state)
 		if err != nil {
@@ -86,7 +89,10 @@ func (st *BotTaskStateMachine) ProcessingCreateTask(ctx context.Context, update 
 		if err != nil {
 			return "", err
 		}
-		st.session.Del(ctx, sChatID, "task_creating_state")
+		err = st.session.Del(ctx, sChatID, "task_creating_state")
+		if err != nil {
+			return "", err
+		}
 		return "Task was created", nil
 	default:
 		return "", errors.New("not create task flow input")

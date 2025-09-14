@@ -37,18 +37,23 @@ func RunApp(c *config.Config) {
 
 	// adapters
 	session := redis.NewTelegramSession(redisClient)
+
+	// repositories
 	taskRepo := postgres.NewTaskRepository(postgresPool)
+	tgRepo := postgres.NewTelegramUseRepository(postgresPool)
+	userRepo := postgres.NewUserRepository(postgresPool)
 
 	// services
 	taskService := usecase.NewTaskService(taskRepo)
+	tgService := usecase.NewTelegramUserService(tgRepo, userRepo)
 
 	// telegram
 	stmtM := telegram.NewBotTaskStateMachine(session, taskService)
 
 	// middleware
-	tm := telegram.NewMiddleware(session)
+	tm := telegram.NewMiddleware(session, tgService)
 
-	opts := []bot.Option{bot.WithMiddlewares(tm.InitSession)}
+	opts := []bot.Option{bot.WithMiddlewares(tm.InitTGUserSession)}
 	b, err := bot.New(c.TgBot.Token, opts...)
 	if err != nil {
 		panic(err)
