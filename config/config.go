@@ -11,8 +11,9 @@ type TelegramBotConfig struct {
 	Token string
 }
 type Config struct {
-	TgBot TelegramBotConfig
-	Redis memory.RedisConfig
+	TgBot    TelegramBotConfig
+	Redis    database.RedisConfig
+	Postgres database.PostgresConfig
 }
 
 func Load() *Config {
@@ -23,9 +24,12 @@ func Load() *Config {
 
 	return &Config{
 		TgBot: TelegramBotConfig{Token: os.Getenv("TELEGRAM_BOT_TOKEN")},
-		Redis: memory.RedisConfig{
+		Redis: database.RedisConfig{
 			Addr:     os.Getenv("REDIS_ADDR"),
 			Password: os.Getenv("REDIS_PASSWORD"),
+		},
+		Postgres: database.PostgresConfig{
+			DSN: os.Getenv("DSN"),
 		},
 	}
 }

@@ -4,8 +4,10 @@ import (
 	"context"
 	"github.com/go-telegram/bot"
 	"github.com/shizakira/daily-tg-bot/config"
-	"github.com/shizakira/daily-tg-bot/internal/adapters"
-	"github.com/shizakira/daily-tg-bot/internal/telegram"
+	"github.com/shizakira/daily-tg-bot/internal/adapters/postgres"
+	"github.com/shizakira/daily-tg-bot/internal/adapters/redis"
+	"github.com/shizakira/daily-tg-bot/internal/adapters/telegram"
+	"github.com/shizakira/daily-tg-bot/internal/usecase"
 	"github.com/shizakira/daily-tg-bot/pkg/database"
 	"log"
 	"os"
@@ -27,17 +29,30 @@ func RunApp(c *config.Config) {
 	if err != nil {
 		panic(err)
 	}
+	postgresPool, err := database.NewPostgresPool(c.Postgres)
+	if err != nil {
+		panic(err)
+	}
 
-	defer redisClient.Close()
+	defer func(redisClient *database.Redis) {
+		_ = redisClient.Close()
+	}(redisClient)
+	defer func(postgresPool *database.PostgresPool) {
+		_ = postgresPool.Close()
+	}(postgresPool)
 
 	// adapters
-	redisStore := adapters.NewRedisStore[telegram.TaskState](redisClient)
+	redisStore := redis.NewTaskStateStore[telegram.TaskState](redisClient)
+	taskRepo := postgres.NewTaskRepository(postgresPool)
 
-	// action
-	actions := telegram.NewAction(redisStore)
+	// services
+	taskService := usecase.NewTaskService(taskRepo)
+
+	// telegram
+	stmtM := telegram.NewBotTaskStateMachine(redisStore, taskService)
 
 	// handlers
-	telegram.NewBotHook(actions).InitBotHandlers(b)
+	telegram.NewBot(b, stmtM, taskService).InitHandlers()
 
 	b.Start(ctx)
 }

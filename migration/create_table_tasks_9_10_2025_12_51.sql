@@ -7,7 +7,8 @@ create table if not exists users
 
 create table if not exists tasks
 (
+    id          serial,
     title       varchar(255),
     description text,
-    deadline    date
+    deadline    timestamp
 );
