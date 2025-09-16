@@ -31,7 +31,7 @@ func (m *Middleware) InitTGUserSession(next bot.HandlerFunc) bot.HandlerFunc {
 		if err != nil {
 			log.Println("initSession error: ", err)
 		}
-		userId, err := m.tgService.GetOrCreate(ctx, dto.CreateTelegramUserInput{
+		output, err := m.tgService.GetOrCreate(ctx, dto.CreateTelegramUserInput{
 			ChatID:     update.Message.Chat.ID,
 			TelegramID: update.Message.From.ID,
 			Username:   update.Message.From.Username,
@@ -39,7 +39,7 @@ func (m *Middleware) InitTGUserSession(next bot.HandlerFunc) bot.HandlerFunc {
 		if err != nil {
 			log.Println("initSession error: ", err)
 		}
-		newCtx := context.WithValue(ctx, UserIdIdempotencyKey("userId"), userId)
+		newCtx := context.WithValue(ctx, UserIdIdempotencyKey("userId"), output.UserID)
 		log.Println(newCtx.Value(UserIdIdempotencyKey("userId")))
 		next(newCtx, b, update)
 	}
