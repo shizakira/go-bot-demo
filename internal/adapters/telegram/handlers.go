@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -25,7 +24,7 @@ func (tb *Bot) onStart(ctx context.Context, b *bot.Bot, update *models.Update) {
 func (tb *Bot) onGetTasks(ctx context.Context, b *bot.Bot, update *models.Update) {
 	userId, ok := ctx.Value(UserIdIdempotencyKey("userId")).(int64)
 	if !ok {
-		log.Println("Error on sending message", errors.New("something wrong with ctx user id"))
+		log.Println("Error on sending message", fmt.Errorf("something wrong with ctx user id: %d", userId))
 		return
 	}
 	output, err := tb.taskService.GetAllTasksByUserID(ctx, dto.GetAllTasksByUserIdInput{UserID: userId})
