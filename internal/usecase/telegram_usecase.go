@@ -20,15 +20,17 @@ func NewTelegramUserService(tgRepo TelegramUserRepository, uRepo UserRepository)
 	return &TelegramUserService{tgRepo: tgRepo, uRepo: uRepo}
 }
 
-func (tu *TelegramUserService) GetOrCreate(ctx context.Context, input dto.CreateTelegramUser) (int64, error) {
+func (tu *TelegramUserService) GetOrCreate(ctx context.Context, input dto.CreateTelegramUserInput) (dto.CreateTelegramUserOutput, error) {
 	tgUser, err := tu.tgRepo.FindByChatID(ctx, input.ChatID)
+	output := dto.CreateTelegramUserOutput{}
 	if err == nil {
-		return tgUser.UserID, nil
+		output.UserID = tgUser.UserID
+		return output, nil
 	}
 
 	userID, err := tu.uRepo.Create(ctx, new(domain.User))
 	if err != nil {
-		return 0, err
+		return output, err
 	}
 	tgUser = &domain.TelegramUser{
 		UserID:     userID,
@@ -38,7 +40,7 @@ func (tu *TelegramUserService) GetOrCreate(ctx context.Context, input dto.Create
 	}
 	err = tu.tgRepo.Create(ctx, tgUser)
 	if err != nil {
-		return 0, err
+		return output, err
 	}
-	return userID, nil
+	return output, nil
 }

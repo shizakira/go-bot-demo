@@ -29,6 +29,14 @@ func (s *TaskService) CreateTask(ctx context.Context, input dto.CreateTaskInput)
 	return s.repo.Add(ctx, task)
 }
 
-func (s *TaskService) GetAllTasksByUserID(ctx context.Context, userId int64) ([]*domain.Task, error) {
-	return s.repo.GetAllByUserID(ctx, userId)
+func (s *TaskService) GetAllTasksByUserID(
+	ctx context.Context,
+	input dto.GetAllTasksByUserIdInput,
+) (dto.GetAllTasksByUserIdOutput, error) {
+	output := dto.GetAllTasksByUserIdOutput{}
+	tasks, err := s.repo.GetAllByUserID(ctx, input.UserID)
+	if err == nil {
+		output.Tasks = tasks
+	}
+	return output, err
 }

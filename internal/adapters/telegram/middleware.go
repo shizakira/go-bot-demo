@@ -31,7 +31,7 @@ func (m *Middleware) InitTGUserSession(next bot.HandlerFunc) bot.HandlerFunc {
 		if err != nil {
 			log.Println("initSession error: ", err)
 		}
-		userId, err := m.tgService.GetOrCreate(ctx, dto.CreateTelegramUser{
+		userId, err := m.tgService.GetOrCreate(ctx, dto.CreateTelegramUserInput{
 			ChatID:     update.Message.Chat.ID,
 			TelegramID: update.Message.From.ID,
 			Username:   update.Message.From.Username,

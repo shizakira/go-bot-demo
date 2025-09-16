@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"github.com/shizakira/daily-tg-bot/internal/dto"
 	"log"
 )
 
@@ -27,12 +28,12 @@ func (tb *Bot) onGetTasks(ctx context.Context, b *bot.Bot, update *models.Update
 		log.Println("Error on sending message", errors.New("something wrong with ctx user id"))
 		return
 	}
-	tasks, err := tb.taskService.GetAllTasksByUserID(ctx, userId)
+	output, err := tb.taskService.GetAllTasksByUserID(ctx, dto.GetAllTasksByUserIdInput{UserID: userId})
 	if err != nil {
 		log.Println("Error on sending message", err)
 		return
 	}
-	for _, task := range tasks {
+	for _, task := range output.Tasks {
 		msg := fmt.Sprintf(
 			"ID: %d\nTitle: %s\nDescription: %s\nDeadline %s\n\n",
 			task.ID, task.Title, task.Description, task.DeadlineDate.Format("2006-01-02 15:04"),
