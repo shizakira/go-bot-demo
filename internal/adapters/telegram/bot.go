@@ -14,19 +14,20 @@ const (
 )
 
 type Bot struct {
-	bot          *bot.Bot
-	stateMachine *BotTaskStateMachine
-	taskService  *usecase.TaskService
-	tgService    *usecase.TelegramUserService
+	bot         *bot.Bot
+	session     Session
+	taskService *usecase.TaskService
+	tgService   *usecase.TelegramUserService
 }
 
-func NewBot(bot *bot.Bot, stateMachine *BotTaskStateMachine, service *usecase.TaskService) *Bot {
-	return &Bot{bot: bot, stateMachine: stateMachine, taskService: service}
+func NewBot(bot *bot.Bot, session Session, taskService *usecase.TaskService, tgService *usecase.TelegramUserService) *Bot {
+	return &Bot{bot: bot, session: session, taskService: taskService, tgService: tgService}
 }
 
 func (tb *Bot) InitHandlers() {
 	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, startCommand, bot.MatchTypeCommandStartOnly, tb.onStart)
 	tb.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, taskCreateCommand, bot.MatchTypeCommand, tb.onTaskCreate)
 	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, taskAllCommand, bot.MatchTypeCommand, tb.onGetTasks)
+	tb.bot.RegisterHandler(bot.HandlerTypeCallbackQueryData, "button_cancel", bot.MatchTypeExact, tb.onTaskCancel)
 	tb.bot.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains, tb.onTaskCreate)
 }

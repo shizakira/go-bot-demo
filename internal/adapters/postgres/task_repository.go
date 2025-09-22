@@ -3,14 +3,13 @@ package postgres
 import (
 	"context"
 	"github.com/shizakira/daily-tg-bot/internal/domain"
-	"github.com/shizakira/daily-tg-bot/pkg/database"
 )
 
 type TaskRepository struct {
-	pool *database.PostgresPool
+	pool *Pool
 }
 
-func NewTaskRepository(pool *database.PostgresPool) *TaskRepository {
+func NewTaskRepository(pool *Pool) *TaskRepository {
 	return &TaskRepository{pool: pool}
 }
 

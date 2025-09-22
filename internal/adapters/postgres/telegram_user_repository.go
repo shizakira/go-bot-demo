@@ -3,14 +3,13 @@ package postgres
 import (
 	"context"
 	"github.com/shizakira/daily-tg-bot/internal/domain"
-	"github.com/shizakira/daily-tg-bot/pkg/database"
 )
 
 type TelegramUseRepository struct {
-	pool *database.PostgresPool
+	pool *Pool
 }
 
-func NewTelegramUseRepository(pool *database.PostgresPool) *TelegramUseRepository {
+func NewTelegramUseRepository(pool *Pool) *TelegramUseRepository {
 	return &TelegramUseRepository{pool: pool}
 }
 

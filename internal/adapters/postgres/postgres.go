@@ -1,19 +1,19 @@
-package database
+package postgres
 
 import (
 	"database/sql"
 	_ "github.com/lib/pq"
 )
 
-type PostgresConfig struct {
+type Config struct {
 	DSN string
 }
 
-type PostgresPool struct {
+type Pool struct {
 	*sql.DB
 }
 
-func NewPostgresPool(c PostgresConfig) (*PostgresPool, error) {
+func NewPostgresPool(c Config) (*Pool, error) {
 	db, err := sql.Open("postgres", c.DSN)
 	if err != nil {
 		return nil, err
@@ -21,5 +21,5 @@ func NewPostgresPool(c PostgresConfig) (*PostgresPool, error) {
 	if err = db.Ping(); err != nil {
 		return nil, err
 	}
-	return &PostgresPool{db}, nil
+	return &Pool{db}, nil
 }

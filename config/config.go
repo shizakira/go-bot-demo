@@ -2,7 +2,8 @@ package config
 
 import (
 	"github.com/joho/godotenv"
-	"github.com/shizakira/daily-tg-bot/pkg/database"
+	"github.com/shizakira/daily-tg-bot/internal/adapters/postgres"
+	"github.com/shizakira/daily-tg-bot/internal/adapters/redis"
 	"log"
 	"os"
 )
@@ -12,8 +13,8 @@ type TelegramBotConfig struct {
 }
 type Config struct {
 	TgBot    TelegramBotConfig
-	Redis    database.RedisConfig
-	Postgres database.PostgresConfig
+	Redis    redis.Config
+	Postgres postgres.Config
 }
 
 func Load() *Config {
@@ -24,11 +25,11 @@ func Load() *Config {
 
 	return &Config{
 		TgBot: TelegramBotConfig{Token: os.Getenv("TELEGRAM_BOT_TOKEN")},
-		Redis: database.RedisConfig{
+		Redis: redis.Config{
 			Addr:     os.Getenv("REDIS_ADDR"),
 			Password: os.Getenv("REDIS_PASSWORD"),
 		},
-		Postgres: database.PostgresConfig{
+		Postgres: postgres.Config{
 			DSN: os.Getenv("DSN"),
 		},
 	}

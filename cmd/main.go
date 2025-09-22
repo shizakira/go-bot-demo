@@ -8,7 +8,6 @@ import (
 	"github.com/shizakira/daily-tg-bot/internal/adapters/redis"
 	"github.com/shizakira/daily-tg-bot/internal/adapters/telegram"
 	"github.com/shizakira/daily-tg-bot/internal/usecase"
-	"github.com/shizakira/daily-tg-bot/pkg/database"
 	"log"
 	"os"
 	"os/signal"
@@ -19,19 +18,19 @@ func RunApp(c *config.Config) {
 	defer cancel()
 
 	// database
-	redisClient, err := database.NewRedisClient(ctx, c.Redis)
+	redisClient, err := redis.NewRedisClient(ctx, c.Redis)
 	if err != nil {
 		panic(err)
 	}
-	postgresPool, err := database.NewPostgresPool(c.Postgres)
+	postgresPool, err := postgres.NewPostgresPool(c.Postgres)
 	if err != nil {
 		panic(err)
 	}
 
-	defer func(redisClient *database.Redis) {
+	defer func(redisClient *redis.Redis) {
 		_ = redisClient.Close()
 	}(redisClient)
-	defer func(postgresPool *database.PostgresPool) {
+	defer func(postgresPool *postgres.Pool) {
 		_ = postgresPool.Close()
 	}(postgresPool)
 
@@ -47,9 +46,6 @@ func RunApp(c *config.Config) {
 	taskService := usecase.NewTaskService(taskRepo)
 	tgService := usecase.NewTelegramUserService(tgRepo, userRepo)
 
-	// telegram
-	stmtM := telegram.NewBotTaskStateMachine(session, taskService)
-
 	// middleware
 	tm := telegram.NewMiddleware(session, tgService)
 
@@ -60,7 +56,7 @@ func RunApp(c *config.Config) {
 	}
 
 	// handlers
-	telegram.NewBot(b, stmtM, taskService).InitHandlers()
+	telegram.NewBot(b, session, taskService, tgService).InitHandlers()
 
 	b.Start(ctx)
 }

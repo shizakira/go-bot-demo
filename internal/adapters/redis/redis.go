@@ -1,11 +1,11 @@
-package database
+package redis
 
 import (
 	"context"
 	"github.com/redis/go-redis/v9"
 )
 
-type RedisConfig struct {
+type Config struct {
 	Addr     string
 	Password string
 }
@@ -14,7 +14,7 @@ type Redis struct {
 	*redis.Client
 }
 
-func NewRedisClient(ctx context.Context, c RedisConfig) (*Redis, error) {
+func NewRedisClient(ctx context.Context, c Config) (*Redis, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     c.Addr,
 		Password: c.Password,

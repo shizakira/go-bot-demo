@@ -4,16 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/shizakira/daily-tg-bot/pkg/database"
 	"time"
 )
 
 type TelegramSession struct {
-	client *database.Redis
+	client *Redis
 	ttl    time.Duration
 }
 
-func NewTelegramSession(client *database.Redis) *TelegramSession {
+func NewTelegramSession(client *Redis) *TelegramSession {
 	return &TelegramSession{
 		client: client,
 		ttl:    24 * time.Hour,

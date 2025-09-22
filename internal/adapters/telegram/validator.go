@@ -25,22 +25,9 @@ func validateDesc(s string) error {
 	return nil
 }
 
-func validateDate(t1 time.Time) error {
-	t2 := time.Now()
-	if !t1.After(t2) {
+func validateDate(t time.Time) error {
+	if t.UTC().Before(time.Now().UTC()) {
 		return fmt.Errorf("%s: %s", validationErr.Error(), "incorrect date")
 	}
 	return nil
-}
-
-func parseAndValidateDate(datetime string) (*time.Time, error) {
-	parsedDate, err := time.Parse("2006-01-02 15:04", datetime)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %s", validationErr.Error(), "incorrect date")
-	}
-	err = validateDate(parsedDate)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %s", validationErr.Error(), "incorrect date")
-	}
-	return &parsedDate, nil
 }

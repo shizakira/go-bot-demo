@@ -3,14 +3,13 @@ package postgres
 import (
 	"context"
 	"github.com/shizakira/daily-tg-bot/internal/domain"
-	"github.com/shizakira/daily-tg-bot/pkg/database"
 )
 
 type UserRepository struct {
-	pool *database.PostgresPool
+	pool *Pool
 }
 
-func NewUserRepository(pool *database.PostgresPool) *UserRepository {
+func NewUserRepository(pool *Pool) *UserRepository {
 	return &UserRepository{pool: pool}
 }
 
