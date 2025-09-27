@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"github.com/shizakira/daily-tg-bot/internal/domain"
+	"time"
 )
 
 type TaskRepository struct {
@@ -20,12 +21,16 @@ func (tr *TaskRepository) Add(ctx context.Context, t domain.Task) error {
 	if err != nil {
 		return err
 	}
-	_, err = stmt.ExecContext(ctx, t.UserID, t.Title, t.Description, t.DeadlineDate)
+	_, err = stmt.ExecContext(ctx, t.UserID, t.Title, t.Description, t.Deadline)
 	return err
 }
 
-func (tr *TaskRepository) GetAllByUserID(ctx context.Context, userId int64) ([]*domain.Task, error) {
-	rows, err := tr.pool.QueryContext(ctx, "select * from tasks where user_id = $1", userId)
+func (tr *TaskRepository) getTasksByQuery(
+	ctx context.Context,
+	query string,
+	params []any,
+) ([]*domain.Task, error) {
+	rows, err := tr.pool.QueryContext(ctx, query, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -35,10 +40,38 @@ func (tr *TaskRepository) GetAllByUserID(ctx context.Context, userId int64) ([]*
 
 	for rows.Next() {
 		newTask := new(domain.Task)
-		if err = rows.Scan(&newTask.ID, &newTask.UserID, &newTask.Title, &newTask.Description, &newTask.DeadlineDate); err != nil {
+		if err = rows.Scan(
+			&newTask.ID,
+			&newTask.UserID,
+			&newTask.Title,
+			&newTask.Description,
+			&newTask.Done,
+			&newTask.Deadline,
+			&newTask.CreatedAt,
+			&newTask.ClosedAt,
+		); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, newTask)
 	}
 	return tasks, err
+}
+
+func (tr *TaskRepository) CloseTask(ctx context.Context, id int64, isDone bool) error {
+	stmt, err := tr.pool.PrepareContext(ctx,
+		"update tasks set closed_at = $1, done = $2 where id = $3",
+	)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.ExecContext(ctx, time.Now().Format("2006-01-02 15:04:05"), isDone, id)
+	return err
+}
+
+func (tr *TaskRepository) GetOpenByUserID(ctx context.Context, userId int64) ([]*domain.Task, error) {
+	return tr.getTasksByQuery(
+		ctx,
+		"select * from tasks where user_id = $1 and done = false and closed_at is null",
+		[]any{userId},
+	)
 }

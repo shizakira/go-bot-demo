@@ -31,19 +31,35 @@ func (tb *Bot) onGetTasks(ctx context.Context, b *bot.Bot, update *models.Update
 		log.Println("Error on sending message", fmt.Errorf("something wrong with ctx user id: %d", userId))
 		return
 	}
-	output, err := tb.taskService.GetAllTasksByUserID(ctx, dto.GetAllTasksByUserIdInput{UserID: userId})
+	output, err := tb.taskService.GetOpenTasksByUserID(ctx, dto.GetAllTasksByUserIdInput{UserID: userId})
 	if err != nil {
 		log.Println("Error on sending message", err)
+		return
+	}
+	log.Println(output.Tasks)
+	if len(output.Tasks) == 0 {
+		_, err = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "No active tasks found"},
+		)
 		return
 	}
 	for _, task := range output.Tasks {
 		msg := fmt.Sprintf(
 			"ID: %d\nTitle: %s\nDescription: %s\nDeadline %s\n\n",
-			task.ID, task.Title, task.Description, task.DeadlineDate.Format("2006-01-02 15:04"),
+			task.ID, task.Title, task.Description, task.Deadline.Format("2006-01-02 15:04"),
 		)
 		_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
 			Text:   msg,
+			ReplyMarkup: &models.InlineKeyboardMarkup{
+				InlineKeyboard: [][]models.InlineKeyboardButton{
+					{
+						{Text: "Done", CallbackData: taskDone},
+						{Text: "Close", CallbackData: taskClose},
+					},
+				},
+			},
 		})
 		if err != nil {
 			log.Println("Error on sending message", err)
@@ -81,11 +97,37 @@ func (tb *Bot) onTaskCreate(ctx context.Context, b *bot.Bot, update *models.Upda
 	}
 }
 
+func (tb *Bot) onTaskClose(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if err := tb.handleTaskClosure(ctx, update.CallbackQuery.Message.Message.Text, false); err != nil {
+		log.Printf("onTaskDone: %v", err)
+	}
+	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
+		Text:   "Task was closed successfully",
+	})
+	if err != nil {
+		log.Println("onTaskClose", err)
+	}
+}
+
+func (tb *Bot) onTaskDone(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if err := tb.handleTaskClosure(ctx, update.CallbackQuery.Message.Message.Text, true); err != nil {
+		log.Printf("onTaskDone: %v", err)
+	}
+	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
+		Text:   "Task was closed successfully",
+	})
+	if err != nil {
+		log.Println("onTaskClose", err)
+	}
+}
+
 func (tb *Bot) getCancelCreatingTaskKB() *models.InlineKeyboardMarkup {
 	return &models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: "Cancel", CallbackData: "button_cancel"},
+				{Text: "Cancel", CallbackData: taskCancelButton},
 			},
 		},
 	}

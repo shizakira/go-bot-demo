@@ -8,7 +8,8 @@ import (
 
 type TaskRepository interface {
 	Add(ctx context.Context, t domain.Task) error
-	GetAllByUserID(ctx context.Context, userUd int64) ([]*domain.Task, error)
+	GetOpenByUserID(ctx context.Context, userUd int64) ([]*domain.Task, error)
+	CloseTask(ctx context.Context, id int64, isDone bool) error
 }
 
 type TaskService struct {
@@ -21,22 +22,34 @@ func NewTaskService(repo TaskRepository) *TaskService {
 
 func (s *TaskService) CreateTask(ctx context.Context, input dto.CreateTaskInput) error {
 	task := domain.Task{
-		UserID:       input.UserID,
-		Title:        input.Title,
-		Description:  input.Description,
-		DeadlineDate: input.DeadlineDate,
+		UserID:      input.UserID,
+		Title:       input.Title,
+		Description: input.Description,
+		Deadline:    input.DeadlineDate,
 	}
 	return s.repo.Add(ctx, task)
 }
 
-func (s *TaskService) GetAllTasksByUserID(
+func (s *TaskService) GetOpenTasksByUserID(
 	ctx context.Context,
 	input dto.GetAllTasksByUserIdInput,
 ) (dto.GetAllTasksByUserIdOutput, error) {
 	output := dto.GetAllTasksByUserIdOutput{}
-	tasks, err := s.repo.GetAllByUserID(ctx, input.UserID)
+	tasks, err := s.repo.GetOpenByUserID(ctx, input.UserID)
 	if err == nil {
 		output.Tasks = tasks
 	}
 	return output, err
+}
+
+func (s *TaskService) CloseTask(ctx context.Context, input dto.CloseTaskInput) error {
+	return s.repo.CloseTask(ctx, input.TaskID, input.IsDone)
+}
+
+func (s *TaskService) SendNotifyForExpiredTasks() {
+
+}
+
+func (s *TaskService) SendNotifyFortNearExpiredTasks() {
+
 }

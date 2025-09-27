@@ -62,6 +62,7 @@ func RunApp(c *config.Config) {
 }
 
 func main() {
+
 	conf := config.Load()
 	log.Println("Starting telegram bot")
 	RunApp(conf)

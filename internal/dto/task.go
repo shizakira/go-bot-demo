@@ -19,3 +19,8 @@ type GetAllTasksByUserIdInput struct {
 type GetAllTasksByUserIdOutput struct {
 	Tasks []*domain.Task
 }
+
+type CloseTaskInput struct {
+	TaskID int64
+	IsDone bool
+}

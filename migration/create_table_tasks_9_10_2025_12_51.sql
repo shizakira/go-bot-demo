@@ -1,11 +1,11 @@
 create table if not exists users
 (
-    id serial primary key
+    id bigint generated always as identity
 );
 
 create table if not exists telegram_users
 (
-    id          serial primary key,
+    id          bigint generated always as identity,
     user_id     bigint,
     telegram_id bigint,
     chat_id     bigint,
@@ -15,10 +15,13 @@ create table if not exists telegram_users
 
 create table if not exists tasks
 (
-    id          serial primary key,
-    user_id     int,
-    title       varchar(255),
+    id          bigint generated always as identity,
+    user_id     int not null,
+    title       varchar(255) not null ,
     description text,
-    deadline    timestamp,
+    done        bool not null default false,
+    deadline    timestamp not null,
+    created_at  timestamp not null default now(),
+    closed_at   timestamp default null,
     foreign key (user_id) references users (id)
 );
