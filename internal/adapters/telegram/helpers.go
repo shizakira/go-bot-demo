@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"errors"
+	"github.com/go-telegram/bot/models"
 	"github.com/shizakira/daily-tg-bot/internal/dto"
 	"regexp"
 	"strconv"
@@ -33,4 +34,22 @@ func (tb *Bot) handleTaskClosure(ctx context.Context, query string, isDone bool)
 	}
 
 	return nil
+}
+
+func getUser(update *models.Update) *models.User {
+	if update.Message != nil {
+		return update.Message.From
+	} else if update.CallbackQuery != nil {
+		return &update.CallbackQuery.From
+	}
+	panic("no user")
+}
+
+func getChat(update *models.Update) *models.Chat {
+	if update.Message != nil {
+		return &update.Message.Chat
+	} else if update.CallbackQuery != nil {
+		return &update.CallbackQuery.Message.Message.Chat
+	}
+	panic("no chat")
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/shizakira/daily-tg-bot/internal/dto"
+	"github.com/sirupsen/logrus"
 	"log"
 	"strconv"
 	"time"
@@ -21,22 +22,21 @@ func (tb *Bot) onStart(ctx context.Context, b *bot.Bot, update *models.Update) {
 		Text:   "Tap on /task-create to create new task",
 	})
 	if err != nil {
-		log.Println("Error on sending message", err)
+		logrus.Error("Error on sending message", err)
 	}
 }
 
 func (tb *Bot) onGetTasks(ctx context.Context, b *bot.Bot, update *models.Update) {
 	userId, ok := ctx.Value(UserIdIdempotencyKey("userId")).(int64)
 	if !ok {
-		log.Println("Error on sending message", fmt.Errorf("something wrong with ctx user id: %d", userId))
+		logrus.Error("onGetTasks", fmt.Errorf("something wrong with ctx user id: %d", userId))
 		return
 	}
 	output, err := tb.taskService.GetOpenTasksByUserID(ctx, dto.GetAllTasksByUserIdInput{UserID: userId})
 	if err != nil {
-		log.Println("Error on sending message", err)
+		logrus.Error("onGetTasks", err)
 		return
 	}
-	log.Println(output.Tasks)
 	if len(output.Tasks) == 0 {
 		_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
@@ -62,7 +62,7 @@ func (tb *Bot) onGetTasks(ctx context.Context, b *bot.Bot, update *models.Update
 			},
 		})
 		if err != nil {
-			log.Println("Error on sending message", err)
+			logrus.Error("Error on sending message", err)
 		}
 	}
 }
@@ -72,54 +72,54 @@ func (tb *Bot) onTaskCancel(ctx context.Context, b *bot.Bot, update *models.Upda
 	sChatID := strconv.FormatInt(chatID, 10)
 
 	if err := tb.session.Del(ctx, sChatID, "task_creating_state"); err != nil {
-		log.Println("error deleting state:", err)
+		logrus.Error("error deleting state:", err)
 	}
 
 	_, err := b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: update.CallbackQuery.ID,
 	})
 	if err != nil {
-		log.Println("onTaskCancel", err)
+		logrus.Error("onTaskCancel", err)
 	}
 
 	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: chatID,
-		Text:   "❌ Создание задачи отменено",
+		Text:   "creating task is cancelled",
 	})
 	if err != nil {
-		log.Println("onTaskCancel", err)
+		logrus.Error("onTaskCancel", err)
 	}
 }
 
 func (tb *Bot) onTaskCreate(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if err := tb.processingCreateTask(ctx, b, update); err != nil {
-		log.Println("onTaskCreate", err)
+		logrus.Error("onTaskCreate", err)
 	}
 }
 
 func (tb *Bot) onTaskClose(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if err := tb.handleTaskClosure(ctx, update.CallbackQuery.Message.Message.Text, false); err != nil {
-		log.Printf("onTaskDone: %v", err)
+		logrus.Error("onTaskDone: %v", err)
 	}
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
 		Text:   "Task was closed successfully",
 	})
 	if err != nil {
-		log.Println("onTaskClose", err)
+		logrus.Error("onTaskClose", err)
 	}
 }
 
 func (tb *Bot) onTaskDone(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if err := tb.handleTaskClosure(ctx, update.CallbackQuery.Message.Message.Text, true); err != nil {
-		log.Printf("onTaskDone: %v", err)
+		logrus.Error("onTaskDone: %v", err)
 	}
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
 		Text:   "Task was closed successfully",
 	})
 	if err != nil {
-		log.Println("onTaskClose", err)
+		logrus.Error("onTaskClose", err)
 	}
 }
 

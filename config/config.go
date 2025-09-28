@@ -4,7 +4,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/shizakira/daily-tg-bot/internal/adapters/postgres"
 	"github.com/shizakira/daily-tg-bot/internal/adapters/redis"
-	"log"
 	"os"
 )
 
@@ -20,7 +19,7 @@ type Config struct {
 func Load() *Config {
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		panic("Error loading .env file")
 	}
 
 	return &Config{

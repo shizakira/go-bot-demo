@@ -8,7 +8,7 @@ import (
 	"github.com/shizakira/daily-tg-bot/internal/adapters/redis"
 	"github.com/shizakira/daily-tg-bot/internal/adapters/telegram"
 	"github.com/shizakira/daily-tg-bot/internal/usecase"
-	"log"
+	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 )
@@ -16,6 +16,9 @@ import (
 func RunApp(c *config.Config) {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+
+	// logger
+	logrus.SetOutput(os.Stdout)
 
 	// database
 	redisClient, err := redis.NewRedisClient(ctx, c.Redis)
@@ -49,7 +52,7 @@ func RunApp(c *config.Config) {
 	// middleware
 	tm := telegram.NewMiddleware(session, tgService)
 
-	opts := []bot.Option{bot.WithMiddlewares(tm.InitTGUserSession)}
+	opts := []bot.Option{bot.WithMiddlewares(tm.GetMiddlewares()...)}
 	b, err := bot.New(c.TgBot.Token, opts...)
 	if err != nil {
 		panic(err)
@@ -62,8 +65,7 @@ func RunApp(c *config.Config) {
 }
 
 func main() {
-
 	conf := config.Load()
-	log.Println("Starting telegram bot")
+	logrus.Info("starting tg bot")
 	RunApp(conf)
 }

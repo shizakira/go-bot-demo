@@ -6,7 +6,7 @@ import (
 	"github.com/go-telegram/bot/models"
 	"github.com/shizakira/daily-tg-bot/internal/dto"
 	"github.com/shizakira/daily-tg-bot/internal/usecase"
-	"log"
+	"github.com/sirupsen/logrus"
 	"strconv"
 )
 
@@ -24,39 +24,39 @@ func NewMiddleware(session Session, userService *usecase.TelegramUserService) *M
 	}
 }
 
+func (m *Middleware) GetMiddlewares() []bot.Middleware {
+	return []bot.Middleware{m.RequestMiddleware, m.InitTGUserSession}
+}
+
+func (m *Middleware) RequestMiddleware(next bot.HandlerFunc) bot.HandlerFunc {
+	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		logrus.WithFields(logrus.Fields{
+			"telegram_user_id": getUser(update).ID,
+			"chat_id":          getChat(update).ID,
+		}).Info("requesting user")
+		next(ctx, b, update)
+	}
+}
+
 func (m *Middleware) InitTGUserSession(next bot.HandlerFunc) bot.HandlerFunc {
 	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
-		var chatID int64
-		var user *models.User
+		chat := getChat(update)
+		user := getUser(update)
 
-		if update.Message != nil {
-			chatID = update.Message.Chat.ID
-			user = update.Message.From
-		} else if update.CallbackQuery != nil {
-			chatID = update.CallbackQuery.Message.Message.Chat.ID
-			user = &update.CallbackQuery.From
-		} else {
-			next(ctx, b, update)
-			return
-		}
-
-		sChatID := strconv.FormatInt(chatID, 10)
-		if err := m.session.InitSession(ctx, sChatID); err != nil {
-			log.Println("initSession error:", err)
+		if err := m.session.InitSession(ctx, strconv.FormatInt(chat.ID, 10)); err != nil {
+			logrus.Error("initSession error:", err)
 		}
 
 		output, err := m.tgService.GetOrCreate(ctx, dto.CreateTelegramUserInput{
-			ChatID:     chatID,
+			ChatID:     chat.ID,
 			TelegramID: user.ID,
 			Username:   user.Username,
 		})
 		if err != nil {
-			log.Println("GetOrCreate error:", err)
+			logrus.Error("GetOrCreate error:", err)
 		}
 
 		newCtx := context.WithValue(ctx, UserIdIdempotencyKey("userId"), output.UserID)
-		log.Println("InitTGUserSession userId:", newCtx.Value(UserIdIdempotencyKey("userId")))
-		log.Println("test we are here")
 		next(newCtx, b, update)
 	}
 }
