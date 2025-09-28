@@ -4,19 +4,14 @@ import (
 	"context"
 	"github.com/shizakira/daily-tg-bot/internal/domain"
 	"github.com/shizakira/daily-tg-bot/internal/dto"
+	"github.com/shizakira/daily-tg-bot/internal/ports"
 )
 
-type TaskRepository interface {
-	Add(ctx context.Context, t domain.Task) error
-	GetOpenByUserID(ctx context.Context, userUd int64) ([]*domain.Task, error)
-	CloseTask(ctx context.Context, id int64, isDone bool) error
-}
-
 type TaskService struct {
-	repo TaskRepository
+	repo ports.TaskRepository
 }
 
-func NewTaskService(repo TaskRepository) *TaskService {
+func NewTaskService(repo ports.TaskRepository) *TaskService {
 	return &TaskService{repo: repo}
 }
 
@@ -44,12 +39,4 @@ func (s *TaskService) GetOpenTasksByUserID(
 
 func (s *TaskService) CloseTask(ctx context.Context, input dto.CloseTaskInput) error {
 	return s.repo.CloseTask(ctx, input.TaskID, input.IsDone)
-}
-
-func (s *TaskService) SendNotifyForExpiredTasks() {
-
-}
-
-func (s *TaskService) SendNotifyFortNearExpiredTasks() {
-
 }

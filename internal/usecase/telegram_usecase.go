@@ -4,19 +4,15 @@ import (
 	"context"
 	"github.com/shizakira/daily-tg-bot/internal/domain"
 	"github.com/shizakira/daily-tg-bot/internal/dto"
+	"github.com/shizakira/daily-tg-bot/internal/ports"
 )
 
-type TelegramUserRepository interface {
-	Create(ctx context.Context, user *domain.TelegramUser) error
-	FindByChatID(ctx context.Context, chatId int64) (*domain.TelegramUser, error)
-}
-
 type TelegramUserService struct {
-	tgRepo TelegramUserRepository
-	uRepo  UserRepository
+	tgRepo ports.TelegramUserRepository
+	uRepo  ports.UserRepository
 }
 
-func NewTelegramUserService(tgRepo TelegramUserRepository, uRepo UserRepository) *TelegramUserService {
+func NewTelegramUserService(tgRepo ports.TelegramUserRepository, uRepo ports.UserRepository) *TelegramUserService {
 	return &TelegramUserService{tgRepo: tgRepo, uRepo: uRepo}
 }
 
