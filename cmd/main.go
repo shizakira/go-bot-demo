@@ -47,12 +47,15 @@ func RunApp(c *config.Config) {
 
 	// services
 	taskService := usecase.NewTaskService(taskRepo)
-	tgService := usecase.NewTelegramUserService(tgRepo, userRepo)
+	tgService := usecase.NewTelegramUserService(tgRepo, userRepo, taskRepo)
 
 	// middleware
 	tm := telegram.NewMiddleware(session, tgService)
 
-	opts := []bot.Option{bot.WithMiddlewares(tm.GetMiddlewares()...)}
+	opts := []bot.Option{
+		bot.WithMiddlewares(tm.GetMiddlewares()...),
+		bot.WithWorkers(2),
+	}
 	b, err := bot.New(c.TgBot.Token, opts...)
 	if err != nil {
 		panic(err)
@@ -61,7 +64,12 @@ func RunApp(c *config.Config) {
 	// handlers
 	telegram.NewBot(b, session, taskService, tgService).InitHandlers()
 
+	notifier := telegram.NewNotifier(b, tgRepo, taskRepo)
+
+	go initScheduler(ctx, notifier)
+
 	b.Start(ctx)
+
 }
 
 func main() {

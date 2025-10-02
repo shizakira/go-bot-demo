@@ -45,9 +45,10 @@ func (tb *Bot) onGetTasks(ctx context.Context, b *bot.Bot, update *models.Update
 		return
 	}
 	for _, task := range output.Tasks {
+		loc, _ := time.LoadLocation("Asia/Yekaterinburg")
 		msg := fmt.Sprintf(
 			"ID: %d\nTitle: %s\nDescription: %s\nDeadline %s\n\n",
-			task.ID, task.Title, task.Description, task.Deadline.Format("2006-01-02 15:04"),
+			task.ID, task.Title, task.Description, task.Deadline.In(loc).Format("2006-01-02 15:04"),
 		)
 		_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
@@ -99,7 +100,7 @@ func (tb *Bot) onTaskCreate(ctx context.Context, b *bot.Bot, update *models.Upda
 
 func (tb *Bot) onTaskClose(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if err := tb.handleTaskClosure(ctx, update.CallbackQuery.Message.Message.Text, false); err != nil {
-		logrus.Error("onTaskDone: %v", err)
+		logrus.Errorf("onTaskDone: %v", err)
 	}
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
@@ -112,7 +113,7 @@ func (tb *Bot) onTaskClose(ctx context.Context, b *bot.Bot, update *models.Updat
 
 func (tb *Bot) onTaskDone(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if err := tb.handleTaskClosure(ctx, update.CallbackQuery.Message.Message.Text, true); err != nil {
-		logrus.Error("onTaskDone: %v", err)
+		logrus.Errorf("onTaskDone: %v", err)
 	}
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
@@ -226,7 +227,7 @@ func (tb *Bot) processingCreateTask(ctx context.Context, b *bot.Bot, update *mod
 			return err
 		}
 
-		state.Data.DeadlineDate = t1
+		state.Data.DeadlineDate = t1.UTC()
 		if err := tb.taskService.CreateTask(ctx, state.Data); err != nil {
 			return err
 		}

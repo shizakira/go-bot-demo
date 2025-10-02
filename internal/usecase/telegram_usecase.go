@@ -8,23 +8,31 @@ import (
 )
 
 type TelegramUserService struct {
-	tgRepo ports.TelegramUserRepository
-	uRepo  ports.UserRepository
+	telegramRepo ports.TelegramUserRepository
+	userRepo     ports.UserRepository
+	taskRepo     ports.TaskRepository
 }
 
-func NewTelegramUserService(tgRepo ports.TelegramUserRepository, uRepo ports.UserRepository) *TelegramUserService {
-	return &TelegramUserService{tgRepo: tgRepo, uRepo: uRepo}
+func NewTelegramUserService(
+	telegramRepo ports.TelegramUserRepository,
+	userRepo ports.UserRepository,
+	taskRepo ports.TaskRepository,
+) *TelegramUserService {
+	return &TelegramUserService{telegramRepo: telegramRepo, userRepo: userRepo, taskRepo: taskRepo}
 }
 
-func (tu *TelegramUserService) GetOrCreate(ctx context.Context, input dto.CreateTelegramUserInput) (dto.CreateTelegramUserOutput, error) {
-	tgUser, err := tu.tgRepo.FindByChatID(ctx, input.ChatID)
+func (tu *TelegramUserService) GetOrCreate(
+	ctx context.Context,
+	input dto.CreateTelegramUserInput,
+) (dto.CreateTelegramUserOutput, error) {
+	tgUser, err := tu.telegramRepo.FindByChatID(ctx, input.ChatID)
 	output := dto.CreateTelegramUserOutput{}
 	if err == nil {
 		output.UserID = tgUser.UserID
 		return output, nil
 	}
 
-	userID, err := tu.uRepo.Create(ctx, new(domain.User))
+	userID, err := tu.userRepo.Create(ctx, new(domain.User))
 	if err != nil {
 		return output, err
 	}
@@ -34,7 +42,7 @@ func (tu *TelegramUserService) GetOrCreate(ctx context.Context, input dto.Create
 		TelegramID: input.TelegramID,
 		Username:   input.Username,
 	}
-	err = tu.tgRepo.Create(ctx, tgUser)
+	err = tu.telegramRepo.Create(ctx, tgUser)
 	if err != nil {
 		return output, err
 	}

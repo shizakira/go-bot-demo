@@ -37,18 +37,11 @@ func (tr *TaskRepository) getTasksByQuery(
 	defer rows.Close()
 
 	var tasks []*domain.Task
-
 	for rows.Next() {
 		newTask := new(domain.Task)
 		if err = rows.Scan(
-			&newTask.ID,
-			&newTask.UserID,
-			&newTask.Title,
-			&newTask.Description,
-			&newTask.Done,
-			&newTask.Deadline,
-			&newTask.CreatedAt,
-			&newTask.ClosedAt,
+			&newTask.ID, &newTask.UserID, &newTask.Title, &newTask.Description, &newTask.Done,
+			&newTask.Deadline, &newTask.CreatedAt, &newTask.ClosedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -74,4 +67,33 @@ func (tr *TaskRepository) GetOpenByUserID(ctx context.Context, userId int64) ([]
 		"select * from tasks where user_id = $1 and done = false and closed_at is null",
 		[]any{userId},
 	)
+}
+
+func (tr *TaskRepository) GetExpiredTasks(ctx context.Context) ([]*domain.Task, error) {
+	expired, err := tr.getTasksByQuery(ctx, `
+		SELECT *
+		FROM tasks 
+		WHERE deadline < NOW()
+			AND done = false
+			AND closed_at IS NULL;
+    `, []any{})
+	if err != nil {
+		return nil, err
+	}
+	return expired, nil
+}
+
+func (tr *TaskRepository) GetSoonExpiredTasks(ctx context.Context) ([]*domain.Task, error) {
+	soon, err := tr.getTasksByQuery(ctx, `
+        SELECT * 
+		FROM tasks
+		WHERE deadline BETWEEN NOW() AND NOW() + INTERVAL '1 hour'
+          AND done = false
+          AND closed_at IS NULL
+    `, []any{})
+	if err != nil {
+		return nil, err
+	}
+
+	return soon, nil
 }
