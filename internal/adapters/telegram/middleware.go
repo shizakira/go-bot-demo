@@ -2,22 +2,23 @@ package telegram
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/shizakira/daily-tg-bot/internal/dto"
-	"github.com/shizakira/daily-tg-bot/internal/usecase"
+	"github.com/shizakira/daily-tg-bot/internal/ports"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type Middleware struct {
 	session   Session
-	tgService *usecase.TelegramUserService
+	tgService ports.TelegramUserService
 }
 
 type UserIdIdempotencyKey string
 
-func NewMiddleware(session Session, userService *usecase.TelegramUserService) *Middleware {
+func NewMiddleware(session Session, userService ports.TelegramUserService) *Middleware {
 	return &Middleware{
 		session:   session,
 		tgService: userService,

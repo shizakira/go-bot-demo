@@ -2,78 +2,40 @@ package main
 
 import (
 	"context"
-	"github.com/go-telegram/bot"
-	"github.com/shizakira/daily-tg-bot/config"
-	"github.com/shizakira/daily-tg-bot/internal/adapters/postgres"
-	"github.com/shizakira/daily-tg-bot/internal/adapters/redis"
-	"github.com/shizakira/daily-tg-bot/internal/adapters/telegram"
-	"github.com/shizakira/daily-tg-bot/internal/usecase"
-	"github.com/sirupsen/logrus"
+	"errors"
 	"os"
 	"os/signal"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/shizakira/daily-tg-bot/config"
+	"github.com/shizakira/daily-tg-bot/internal/app"
 )
 
-func RunApp(c *config.Config) {
+func main() {
+	logrus.SetOutput(os.Stdout)
+
+	cfg, err := config.Load()
+	if err != nil {
+		logrus.Fatalf("load config: %v", err)
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	// logger
-	logrus.SetOutput(os.Stdout)
-
-	// database
-	redisClient, err := redis.NewRedisClient(ctx, c.Redis)
+	application, err := app.New(ctx, cfg)
 	if err != nil {
-		panic(err)
-	}
-	postgresPool, err := postgres.NewPostgresPool(c.Postgres)
-	if err != nil {
-		panic(err)
+		logrus.Fatalf("init app: %v", err)
 	}
 
-	defer func(redisClient *redis.Redis) {
-		_ = redisClient.Close()
-	}(redisClient)
-	defer func(postgresPool *postgres.Pool) {
-		_ = postgresPool.Close()
-	}(postgresPool)
+	defer func() {
+		if closeErr := application.Close(); closeErr != nil {
+			logrus.WithError(closeErr).Error("failed to close application")
+		}
+	}()
 
-	// adapters
-	session := redis.NewTelegramSession(redisClient)
-
-	// repositories
-	taskRepo := postgres.NewTaskRepository(postgresPool)
-	tgRepo := postgres.NewTelegramUseRepository(postgresPool)
-	userRepo := postgres.NewUserRepository(postgresPool)
-
-	// services
-	taskService := usecase.NewTaskService(taskRepo)
-	tgService := usecase.NewTelegramUserService(tgRepo, userRepo, taskRepo)
-
-	// middleware
-	tm := telegram.NewMiddleware(session, tgService)
-
-	opts := []bot.Option{
-		bot.WithMiddlewares(tm.GetMiddlewares()...),
-		bot.WithWorkers(2),
-	}
-	b, err := bot.New(c.TgBot.Token, opts...)
-	if err != nil {
-		panic(err)
-	}
-
-	// handlers
-	telegram.NewBot(b, session, taskService, tgService).InitHandlers()
-
-	notifier := telegram.NewNotifier(b, tgRepo, taskRepo)
-
-	go initScheduler(ctx, notifier)
-
-	b.Start(ctx)
-
-}
-
-func main() {
-	conf := config.Load()
 	logrus.Info("starting tg bot")
-	RunApp(conf)
+	if err := application.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		logrus.WithError(err).Error("application stopped with error")
+	}
 }

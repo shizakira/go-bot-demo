@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+
 	"github.com/shizakira/daily-tg-bot/internal/domain"
 	"github.com/shizakira/daily-tg-bot/internal/dto"
 	"github.com/shizakira/daily-tg-bot/internal/ports"
@@ -31,10 +32,11 @@ func (s *TaskService) GetOpenTasksByUserID(
 ) (dto.GetAllTasksByUserIdOutput, error) {
 	output := dto.GetAllTasksByUserIdOutput{}
 	tasks, err := s.repo.GetOpenByUserID(ctx, input.UserID)
-	if err == nil {
-		output.Tasks = tasks
+	if err != nil {
+		return output, err
 	}
-	return output, err
+	output.Tasks = tasks
+	return output, nil
 }
 
 func (s *TaskService) CloseTask(ctx context.Context, input dto.CloseTaskInput) error {

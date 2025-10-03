@@ -25,13 +25,11 @@ func (t *TelegramSession) InitSession(ctx context.Context, chatId string) error 
 		return fmt.Errorf("failed to check session existence: %w", err)
 	}
 	if exist == 0 {
-		err := t.client.HSet(ctx, chatId, "initialized", "true").Err()
-		if err != nil {
+		if err := t.client.HSet(ctx, chatId, "initialized", "true").Err(); err != nil {
 			return fmt.Errorf("failed to initialize session: %w", err)
 		}
 	}
-	err = t.client.Expire(ctx, chatId, t.ttl).Err()
-	if err != nil {
+	if err := t.client.Expire(ctx, chatId, t.ttl).Err(); err != nil {
 		return fmt.Errorf("failed to set session TTL: %w", err)
 	}
 	return nil
@@ -42,11 +40,12 @@ func (t *TelegramSession) Set(ctx context.Context, chatId string, key string, va
 	if err != nil {
 		return fmt.Errorf("failed to marshal value: %w", err)
 	}
-	err = t.client.HSet(ctx, chatId, key, raw).Err()
-	if err != nil {
+	if err := t.client.HSet(ctx, chatId, key, raw).Err(); err != nil {
 		return fmt.Errorf("failed to set session value: %w", err)
 	}
-	t.client.Expire(ctx, chatId, t.ttl)
+	if err := t.client.Expire(ctx, chatId, t.ttl).Err(); err != nil {
+		return fmt.Errorf("failed to refresh session ttl: %w", err)
+	}
 	return nil
 }
 
@@ -55,21 +54,21 @@ func (t *TelegramSession) Get(ctx context.Context, chatId string, key string) ([
 	if err != nil {
 		return nil, fmt.Errorf("failed to get session value: %w", err)
 	}
-	t.client.Expire(ctx, chatId, t.ttl)
+	if err := t.client.Expire(ctx, chatId, t.ttl).Err(); err != nil {
+		return nil, fmt.Errorf("failed to refresh session ttl: %w", err)
+	}
 	return raw, nil
 }
 
 func (t *TelegramSession) Del(ctx context.Context, chatId string, key string) error {
-	err := t.client.HDel(ctx, chatId, key).Err()
-	if err != nil {
+	if err := t.client.HDel(ctx, chatId, key).Err(); err != nil {
 		return fmt.Errorf("failed to delete session value: %w", err)
 	}
 	return nil
 }
 
 func (t *TelegramSession) Clear(ctx context.Context, chatId string) error {
-	err := t.client.Del(ctx, chatId).Err()
-	if err != nil {
+	if err := t.client.Del(ctx, chatId).Err(); err != nil {
 		return fmt.Errorf("failed to clear session: %w", err)
 	}
 	return nil

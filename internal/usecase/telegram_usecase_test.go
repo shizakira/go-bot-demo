@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -29,6 +30,10 @@ func (m *telegramUserRepoMock) FindByChatID(_ context.Context, _ int64) (*domain
 		return nil, m.findErr
 	}
 	return m.findResult, nil
+}
+
+func (m *telegramUserRepoMock) FindByUserIDs(context.Context, []int64) ([]*domain.TelegramUser, error) {
+	return nil, nil
 }
 
 type userRepoMock struct {
@@ -75,7 +80,7 @@ func TestTelegramUserService_GetOrCreate_UserExists(t *testing.T) {
 }
 
 func TestTelegramUserService_GetOrCreate_CreateNewUser(t *testing.T) {
-	tgRepo := &telegramUserRepoMock{findErr: errors.New("not found")}
+	tgRepo := &telegramUserRepoMock{findErr: sql.ErrNoRows}
 	userRepo := &userRepoMock{nextID: 101}
 	service := NewTelegramUserService(tgRepo, userRepo)
 
@@ -106,7 +111,7 @@ func TestTelegramUserService_GetOrCreate_CreateNewUser(t *testing.T) {
 		t.Errorf("expected username %q, got %q", input.Username, created.Username)
 	}
 
-	if output.UserID != 0 {
-		t.Fatalf("expected zero user id in output for new user, got %d", output.UserID)
+	if output.UserID != userRepo.nextID {
+		t.Fatalf("expected output user id %d, got %d", userRepo.nextID, output.UserID)
 	}
 }

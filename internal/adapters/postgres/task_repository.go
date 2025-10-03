@@ -2,8 +2,9 @@ package postgres
 
 import (
 	"context"
-	"github.com/shizakira/daily-tg-bot/internal/domain"
 	"time"
+
+	"github.com/shizakira/daily-tg-bot/internal/domain"
 )
 
 type TaskRepository struct {
@@ -15,20 +16,21 @@ func NewTaskRepository(pool *Pool) *TaskRepository {
 }
 
 func (tr *TaskRepository) Add(ctx context.Context, t domain.Task) error {
-	stmt, err := tr.pool.PrepareContext(ctx,
+	_, err := tr.pool.ExecContext(
+		ctx,
 		"insert into tasks (user_id, title, description, deadline) values ($1, $2, $3, $4)",
+		t.UserID,
+		t.Title,
+		t.Description,
+		t.Deadline,
 	)
-	if err != nil {
-		return err
-	}
-	_, err = stmt.ExecContext(ctx, t.UserID, t.Title, t.Description, t.Deadline)
 	return err
 }
 
 func (tr *TaskRepository) getTasksByQuery(
 	ctx context.Context,
 	query string,
-	params []any,
+	params ...any,
 ) ([]*domain.Task, error) {
 	rows, err := tr.pool.QueryContext(ctx, query, params...)
 	if err != nil {
@@ -47,17 +49,20 @@ func (tr *TaskRepository) getTasksByQuery(
 		}
 		tasks = append(tasks, newTask)
 	}
-	return tasks, err
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return tasks, nil
 }
 
 func (tr *TaskRepository) CloseTask(ctx context.Context, id int64, isDone bool) error {
-	stmt, err := tr.pool.PrepareContext(ctx,
+	_, err := tr.pool.ExecContext(
+		ctx,
 		"update tasks set closed_at = $1, done = $2 where id = $3",
+		time.Now().UTC(),
+		isDone,
+		id,
 	)
-	if err != nil {
-		return err
-	}
-	_, err = stmt.ExecContext(ctx, time.Now().Format("2006-01-02 15:04:05"), isDone, id)
 	return err
 }
 
@@ -65,35 +70,26 @@ func (tr *TaskRepository) GetOpenByUserID(ctx context.Context, userId int64) ([]
 	return tr.getTasksByQuery(
 		ctx,
 		"select * from tasks where user_id = $1 and done = false and closed_at is null",
-		[]any{userId},
+		userId,
 	)
 }
 
 func (tr *TaskRepository) GetExpiredTasks(ctx context.Context) ([]*domain.Task, error) {
-	expired, err := tr.getTasksByQuery(ctx, `
-		SELECT *
-		FROM tasks 
-		WHERE deadline < NOW()
-			AND done = false
-			AND closed_at IS NULL;
-    `, []any{})
-	if err != nil {
-		return nil, err
-	}
-	return expired, nil
+	return tr.getTasksByQuery(ctx, `
+		select *
+		from tasks 
+		where deadline < now()
+			and done = false
+			and closed_at is null;
+    `)
 }
 
 func (tr *TaskRepository) GetSoonExpiredTasks(ctx context.Context) ([]*domain.Task, error) {
-	soon, err := tr.getTasksByQuery(ctx, `
-        SELECT * 
-		FROM tasks
-		WHERE deadline BETWEEN NOW() AND NOW() + INTERVAL '1 hour'
-          AND done = false
-          AND closed_at IS NULL
-    `, []any{})
-	if err != nil {
-		return nil, err
-	}
-
-	return soon, nil
+	return tr.getTasksByQuery(ctx, `
+        select * 
+		from tasks
+		where deadline between now() and now() + interval '1 hour'
+          and done = false
+          and closed_at is null
+    `)
 }

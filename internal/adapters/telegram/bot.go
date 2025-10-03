@@ -2,7 +2,7 @@ package telegram
 
 import (
 	"github.com/go-telegram/bot"
-	"github.com/shizakira/daily-tg-bot/internal/usecase"
+	"github.com/shizakira/daily-tg-bot/internal/ports"
 )
 
 type botCommand = string
@@ -24,11 +24,11 @@ const (
 type Bot struct {
 	bot         *bot.Bot
 	session     Session
-	taskService *usecase.TaskService
-	tgService   *usecase.TelegramUserService
+	taskService ports.TaskService
+	tgService   ports.TelegramUserService
 }
 
-func NewBot(bot *bot.Bot, session Session, taskService *usecase.TaskService, tgService *usecase.TelegramUserService) *Bot {
+func NewBot(bot *bot.Bot, session Session, taskService ports.TaskService, tgService ports.TelegramUserService) *Bot {
 	return &Bot{bot: bot, session: session, taskService: taskService, tgService: tgService}
 }
 

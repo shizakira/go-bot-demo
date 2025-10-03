@@ -41,6 +41,14 @@ func (m *taskRepositoryMock) CloseTask(_ context.Context, id int64, isDone bool)
 	return m.closeErr
 }
 
+func (m *taskRepositoryMock) GetExpiredTasks(context.Context) ([]*domain.Task, error) {
+	return nil, nil
+}
+
+func (m *taskRepositoryMock) GetSoonExpiredTasks(context.Context) ([]*domain.Task, error) {
+	return nil, nil
+}
+
 func TestTaskService_CreateTask(t *testing.T) {
 	repo := &taskRepositoryMock{}
 	service := NewTaskService(repo)

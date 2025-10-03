@@ -3,12 +3,13 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/go-telegram/bot"
 	"github.com/shizakira/daily-tg-bot/internal/domain"
 	"github.com/shizakira/daily-tg-bot/internal/ports"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
-	"time"
 )
 
 type NotifyData struct {
@@ -21,10 +22,15 @@ type Notifier struct {
 	bot          *bot.Bot
 	telegramRepo ports.TelegramUserRepository
 	taskRepo     ports.TaskRepository
+	location     *time.Location
 }
 
 func NewNotifier(bot *bot.Bot, telegramRepo ports.TelegramUserRepository, taskRepo ports.TaskRepository) *Notifier {
-	return &Notifier{bot: bot, telegramRepo: telegramRepo, taskRepo: taskRepo}
+	loc, err := time.LoadLocation("Asia/Yekaterinburg")
+	if err != nil {
+		loc = time.Local
+	}
+	return &Notifier{bot: bot, telegramRepo: telegramRepo, taskRepo: taskRepo, location: loc}
 }
 
 func (n *Notifier) Run(ctx context.Context) error {
@@ -55,8 +61,13 @@ func (n *Notifier) Run(ctx context.Context) error {
 		return err
 	}
 
+	uniqueUserIDs := make(map[int64]struct{})
 	userIds := make([]int64, 0, len(expired)+len(soonExpired))
 	for _, task := range append(expired, soonExpired...) {
+		if _, exists := uniqueUserIDs[task.UserID]; exists {
+			continue
+		}
+		uniqueUserIDs[task.UserID] = struct{}{}
 		userIds = append(userIds, task.UserID)
 	}
 
@@ -78,14 +89,16 @@ func (n *Notifier) Run(ctx context.Context) error {
 	for _, task := range expired {
 		task := task
 		g2.Go(func() error {
-			return n.Notify(notifyCtx, task, telegramUsersMap[task.UserID], "Task expired")
+			tgUser := telegramUsersMap[task.UserID]
+			return n.Notify(notifyCtx, task, tgUser, "Task expired")
 		})
 	}
 
 	for _, task := range soonExpired {
 		task := task
 		g2.Go(func() error {
-			return n.Notify(notifyCtx, task, telegramUsersMap[task.UserID], "Task will be expire soon")
+			tgUser := telegramUsersMap[task.UserID]
+			return n.Notify(notifyCtx, task, tgUser, "Task will expire soon")
 		})
 	}
 
@@ -97,12 +110,11 @@ func (n *Notifier) Run(ctx context.Context) error {
 }
 
 func (n *Notifier) Notify(ctx context.Context, task *domain.Task, tgUser *domain.TelegramUser, msg string) error {
-	loc, _ := time.LoadLocation("Asia/Yekaterinburg")
 	taskMsg := fmt.Sprintf(
 		"ID: %d\nTitle: %s\nDescription: %s\nDeadline %s\n\n",
-		task.ID, task.Title, task.Description, task.Deadline.In(loc).Format("2006-01-02 15:04"),
+		task.ID, task.Title, task.Description, task.Deadline.In(n.location).Format("2006-01-02 15:04"),
 	)
-	text := fmt.Sprintf("%s, %s", msg, taskMsg)
+	text := fmt.Sprintf("%s\n%s", msg, taskMsg)
 	logrus.WithFields(logrus.Fields{"task_message": taskMsg}).Infof("notify user %d", tgUser.UserID)
 	_, err := n.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: tgUser.ChatID,

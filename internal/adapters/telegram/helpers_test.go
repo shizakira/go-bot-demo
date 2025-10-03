@@ -31,6 +31,14 @@ func (m *handleTaskRepoMock) CloseTask(_ context.Context, id int64, isDone bool)
 	return m.closeErr
 }
 
+func (m *handleTaskRepoMock) GetExpiredTasks(context.Context) ([]*domain.Task, error) {
+	return nil, nil
+}
+
+func (m *handleTaskRepoMock) GetSoonExpiredTasks(context.Context) ([]*domain.Task, error) {
+	return nil, nil
+}
+
 func TestGetValueFromQueryByRe(t *testing.T) {
 	tb := &Bot{}
 	value, err := tb.getValueFromQueryByRe(`ID: ([0-9]+)`, "ID: 15\nTitle: task")
