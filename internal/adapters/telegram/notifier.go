@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"fmt"
+	"github.com/go-telegram/bot/models"
 	"time"
 
 	"github.com/go-telegram/bot"
@@ -119,6 +120,14 @@ func (n *Notifier) Notify(ctx context.Context, task *domain.Task, tgUser *domain
 	_, err := n.bot.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: tgUser.ChatID,
 		Text:   text,
+		ReplyMarkup: &models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					{Text: "Done", CallbackData: taskDone},
+					{Text: "Close", CallbackData: taskClose},
+				},
+			},
+		},
 	})
 
 	return err
