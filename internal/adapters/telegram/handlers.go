@@ -19,7 +19,7 @@ func (tb *Bot) onStart(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
-		Text:   "Tap on /task-create to create new task",
+		Text:   "Tap on /task_create to create new task",
 	})
 	if err != nil {
 		logrus.Error("Error on sending message", err)
@@ -85,7 +85,7 @@ func (tb *Bot) onTaskCancel(ctx context.Context, b *bot.Bot, update *models.Upda
 
 	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: chatID,
-		Text:   "creating task is cancelled",
+		Text:   "Creating task is cancelled",
 	})
 	if err != nil {
 		logrus.Error("onTaskCancel", err)
@@ -209,8 +209,11 @@ func (tb *Bot) processingCreateTask(ctx context.Context, b *bot.Bot, update *mod
 		}
 
 		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID:      update.Message.Chat.ID,
-			Text:        "Enter the task deadline datetime",
+			ChatID: update.Message.Chat.ID,
+			Text: fmt.Sprintf(
+				"Enter the task deadline datetime in %s format",
+				time.Now().In(time.Local).Format("2006-01-02 15:04"),
+			),
 			ReplyMarkup: tb.getCancelCreatingTaskKB(),
 		})
 		return err
