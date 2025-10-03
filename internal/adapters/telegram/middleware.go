@@ -26,7 +26,19 @@ func NewMiddleware(session Session, userService ports.TelegramUserService) *Midd
 }
 
 func (m *Middleware) GetMiddlewares() []bot.Middleware {
-	return []bot.Middleware{m.RequestMiddleware, m.InitTGUserSession}
+	return []bot.Middleware{m.RecoveryMiddleware, m.RequestMiddleware, m.InitTGUserSession}
+}
+
+func (m *Middleware) RecoveryMiddleware(next bot.HandlerFunc) bot.HandlerFunc {
+	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		defer func() {
+			err := recover()
+			if err != nil {
+				logrus.Errorf("recovered from panic: %v", err)
+			}
+		}()
+		next(ctx, b, update)
+	}
 }
 
 func (m *Middleware) RequestMiddleware(next bot.HandlerFunc) bot.HandlerFunc {
